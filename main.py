@@ -1,10 +1,14 @@
 import sys
 from PIL import Image
 import numpy as np
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
 
-_ASCII_BRIGHTNESS_MAP_raw = "`^\",:;Il!i~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
-_ASCII_BRIGHTNESS_MAP = sorted(enumerate(_ASCII_BRIGHTNESS_MAP_raw))
-_ASCII_BRIGHTNESS_MAP.reverse()
+IMG_SHRINK_FACTOR = 2
+MAX_PIXEL_VALUE = 255
+ASCII_BRIGHTNESS_MAP_raw = "`^\",:;Il!i~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
+ASCII_BRIGHTNESS_MAP = sorted(enumerate(ASCII_BRIGHTNESS_MAP_raw))
+ASCII_BRIGHTNESS_MAP.reverse()
 
 
 # provides three possible methods, with default 'average'
@@ -23,7 +27,7 @@ def convert_rgb_pixel_to_brightness(p: tuple, method: str) -> int:
 def convert_brightness_to_ascii(b: int) -> str:
     # scale factor should be slightly higher than the actual divisor, to ensure no
     # resulting numbers are too large
-    scale_factor = round((255 / len(_ASCII_BRIGHTNESS_MAP) + 0.01), 2)
+    scale_factor = round((MAX_PIXEL_VALUE / len(ASCII_BRIGHTNESS_MAP) + 0.01), 2)
 
     # we pull out the value at the correct key
     raw_key = int(b // scale_factor)
@@ -31,7 +35,7 @@ def convert_brightness_to_ascii(b: int) -> str:
     if raw_key < 0: raw_key = 0
     key = raw_key
 
-    a = _ASCII_BRIGHTNESS_MAP[key][1]
+    a = ASCII_BRIGHTNESS_MAP[key][1]
     return a
 
 
@@ -58,6 +62,20 @@ def construct_brightness_matrix(data: list, height: int, width: int) -> list[lis
     return brightness_matrix
 
 
+def normalize_brightness_matrix(brightness_matrix: list[list]) -> list[list]:
+    normalized_brightness_matrix = []
+    max_pixel = max(map(max, brightness_matrix))
+    min_pixel = min(map(min, brightness_matrix))
+    for row in brightness_matrix:
+        rescaled_row = []
+        for p in row:
+            r = MAX_PIXEL_VALUE * (p - min_pixel) / float(max_pixel - min_pixel)
+            rescaled_row.append(r)
+        normalized_brightness_matrix.append(rescaled_row)
+
+    return normalized_brightness_matrix
+
+
 def convert_brightness_mat_to_ascii_mat(brightness_matrix: list[list]) -> list[list]:
     ascii_matrix = [[] for r in range(len(brightness_matrix))]
     for i in range(len(brightness_matrix)):
@@ -78,10 +96,15 @@ def print_ascii_matrix(mat: list[list]) -> None:
 
 def main():
     # PART 1: load the image
-    im = Image.open('ascii-pineapple.jpeg')
+    Tk().withdraw()  # we don't want a full GUI, so keep the root window from appearing
+    filename = askopenfilename()
+    if filename == '':
+        # default is the ol' pineapple
+        filename = 'ascii-pineapple.jpeg'
+    im = Image.open(filename)
 
     # resize so that it will fit in terminal window
-    shrink_factor = 2
+    shrink_factor = IMG_SHRINK_FACTOR
     im = im.resize((im.size[0] // shrink_factor, im.size[1] // shrink_factor))
     width, height = im.size
     data = [im.getdata()][0]
@@ -101,6 +124,9 @@ def main():
     # PART 3: convert to brightness matrix
     try:
         brightness_matrix = construct_brightness_matrix(data, height, width)
+
+        # now still want to normalize values
+        brightness_matrix = normalize_brightness_matrix(brightness_matrix)
     except:
         print(f'Oops! Attempting to construct '
               f'brightness matrix but {sys.exc_info()[0]} occurred.')
