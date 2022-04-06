@@ -1,17 +1,27 @@
 import sys
 from PIL import Image
-import numpy as np
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 
-IMG_SHRINK_FACTOR = 2
-MAX_PIXEL_VALUE = 255
-ASCII_BRIGHTNESS_MAP_raw = "`^\",:;Il!i~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
-ASCII_BRIGHTNESS_MAP = sorted(enumerate(ASCII_BRIGHTNESS_MAP_raw))
-ASCII_BRIGHTNESS_MAP.reverse()
+
+#######################################################################################################
+# --------------------------------------- ASCII Art Converter --------------------------------------- #
+# by Matt Michaelson
+# Purpose: Converts a JPEG into an ASCII version of same image, displayed in the Terminal window.
+#
+# Inspired by Programming Projects for Advanced Beginners
+# https://robertheaton.com/2018/06/12/programming-projects-for-advanced-beginners-ascii-art/
+#
+#######################################################################################################
 
 
-# provides three possible methods, with default 'average'
+# Global Variables
+IMG_SHRINK_FACTOR = 2   # to help fit Terminal window, images will be shrunk by this factor
+MAX_PIXEL_VALUE = 255   # used for normalizing pixel brightness values
+ASCII_BRIGHTNESS_MAP = "`^\",:;Il!i~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"   # maps int to ASCII char
+
+
+# provides three possible conversion methods, with default 'average'
 def convert_rgb_pixel_to_brightness(p: tuple, method: str) -> int:
     if method == 'average':
         return int((p[0] + p[1] + p[2]) // 3)
@@ -24,6 +34,7 @@ def convert_rgb_pixel_to_brightness(p: tuple, method: str) -> int:
         return int((p[0] + p[1] + p[2]) // 3)
 
 
+# takes single int brightness value and converts to single ASCII char based on global var map
 def convert_brightness_to_ascii(b: int) -> str:
     # scale factor should be slightly higher than the actual divisor, to ensure no
     # resulting numbers are too large
@@ -35,7 +46,7 @@ def convert_brightness_to_ascii(b: int) -> str:
     if raw_key < 0: raw_key = 0
     key = raw_key
 
-    a = ASCII_BRIGHTNESS_MAP[key][1]
+    a = ASCII_BRIGHTNESS_MAP[key]
     return a
 
 
@@ -62,6 +73,7 @@ def construct_brightness_matrix(data: list, height: int, width: int) -> list[lis
     return brightness_matrix
 
 
+# normalizes brightness matrix based on MAX_PIXEL_VALUE global var
 def normalize_brightness_matrix(brightness_matrix: list[list]) -> list[list]:
     normalized_brightness_matrix = []
     max_pixel = max(map(max, brightness_matrix))
@@ -99,7 +111,7 @@ def main():
     Tk().withdraw()  # we don't want a full GUI, so keep the root window from appearing
     filename = askopenfilename()
     if filename == '':
-        # default is the ol' pineapple
+        # default is the ol' pineapple, in the script dir
         filename = 'ascii-pineapple.jpeg'
     im = Image.open(filename)
 
@@ -109,7 +121,8 @@ def main():
     width, height = im.size
     data = [im.getdata()][0]
 
-    # PART 2: load pixels into matrix
+    # PART 2: load pixels into matrix -- not needed
+
     # by-hand method
     # data_list = [im.getdata()]
     # pixel_matrix = [[] for row in range(height)]
@@ -118,6 +131,7 @@ def main():
     #     for c in range(width):
     #         pixel_matrix[r].append(data_list[0][i])
     #         i += 1
+
     # Alternative: numpy reshape method
     # d = np.reshape(np.array(im.getdata()), (height, width, 3))
 
